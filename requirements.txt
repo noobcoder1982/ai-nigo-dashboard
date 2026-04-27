@@ -11,3 +11,7 @@ chromadb
 sentence-transformers
 python-dotenv
 requests
+folium
+streamlit-folium
+plotly
+PyPDF2

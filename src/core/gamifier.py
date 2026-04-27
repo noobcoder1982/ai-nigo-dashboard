@@ -1,23 +1,14 @@
-import json
-import os
+from src.repository.volunteer_repository import VolunteerRepository
 
-DATA_FILE = os.path.join(os.path.dirname(__file__), '..', 'data', 'volunteer_stats.json')
+repo = VolunteerRepository()
 
 def load_stats():
-    """Loads volunteer stats from JSON file."""
-    if not os.path.exists(DATA_FILE) or os.path.getsize(DATA_FILE) == 0:
-        return {}
-    try:
-        with open(DATA_FILE, 'r') as f:
-            return json.load(f)
-    except json.JSONDecodeError:
-        return {}
+    """Loads volunteer stats via repository."""
+    return repo.load_all()
 
 def save_stats(stats):
-    """Saves volunteer stats to JSON file."""
-    os.makedirs(os.path.dirname(DATA_FILE), exist_ok=True)
-    with open(DATA_FILE, 'w') as f:
-        json.dump(stats, f, indent=4)
+    """Saves volunteer stats via repository."""
+    repo.save_all(stats)
 
 def calculate_reward_points(task_priority, volunteer_multiplier=1.0):
     """
@@ -41,20 +32,20 @@ def get_level_info(points):
 
 def deplete_energy(volunteer_id, amount=25):
     """Reduces volunteer energy after a mission."""
-    stats = load_stats()
-    if volunteer_id in stats:
-        stats[volunteer_id]["energy"] = max(0, stats[volunteer_id].get("energy", 100) - amount)
-        save_stats(stats)
-        return stats[volunteer_id]["energy"]
+    v_data = repo.get_by_id(volunteer_id)
+    if v_data:
+        new_energy = max(0, v_data.get("energy", 100) - amount)
+        repo.update_volunteer(volunteer_id, {"energy": new_energy})
+        return new_energy
     return None
 
 def recover_energy(volunteer_id, amount=10):
     """Increases volunteer energy during rest."""
-    stats = load_stats()
-    if volunteer_id in stats:
-        stats[volunteer_id]["energy"] = min(100, stats[volunteer_id].get("energy", 0) + amount)
-        save_stats(stats)
-        return stats[volunteer_id]["energy"]
+    v_data = repo.get_by_id(volunteer_id)
+    if v_data:
+        new_energy = min(100, v_data.get("energy", 0) + amount)
+        repo.update_volunteer(volunteer_id, {"energy": new_energy})
+        return new_energy
     return None
 
 
@@ -62,12 +53,8 @@ def update_volunteer_after_task(volunteer_id, task_points, category):
     """
     Updates a volunteer's stats after a task is assigned/completed.
     """
-    stats = load_stats()
+    v_data = repo.get_by_id(volunteer_id) or {"total_points": 0, "tasks_completed": 0, "badges": [], "categories": {}, "energy": 100}
     
-    if volunteer_id not in stats:
-        stats[volunteer_id] = {"total_points": 0, "tasks_completed": 0, "badges": [], "categories": {}}
-
-    v_data = stats[volunteer_id]
     v_data["total_points"] += task_points
     v_data["tasks_completed"] += 1
     
@@ -90,6 +77,7 @@ def update_volunteer_after_task(volunteer_id, task_points, category):
     # 4. Energy Depletion (Integrated Sustainability)
     v_data["energy"] = max(0, v_data.get("energy", 100) - 25)
     
-    save_stats(stats)
+    repo.update_volunteer(volunteer_id, v_data)
     return v_data, new_badges
+
 

@@ -10,7 +10,12 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # Import our AI logic from main.py
-from src.core.engine import process_new_task
+from src.core.service import VolunteerService
+from src.core.inventory_service import InventoryService
+
+# Initialize Services
+vol_service = VolunteerService()
+inv_service = InventoryService()
 
 app = FastAPI(
     title="AI Intelligence Layer API",
@@ -48,11 +53,25 @@ class MatchRequest(BaseModel):
     task: TaskInput
     volunteers: List[VolunteerInput]
 
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+
 # --- ENDPOINTS ---
+
+# Mount static files from frontend directory
+app.mount("/static", StaticFiles(directory="frontend"), name="static")
 
 @app.get("/")
 def home():
-    return {"message": "AI Intelligence Layer is Online", "docs": "/docs"}
+    return FileResponse("frontend/index.html")
+
+@app.get("/style.css")
+def get_css():
+    return FileResponse("frontend/style.css")
+
+@app.get("/app.js")
+def get_js():
+    return FileResponse("frontend/app.js")
 
 @app.post("/process")
 def process_ai_request(data: MatchRequest):
@@ -62,15 +81,49 @@ def process_ai_request(data: MatchRequest):
     2. Calculates Priority Score
     3. Ranks Volunteers based on distance, skill, and availability
     """
-    # Convert Pydantic models to dictionaries for our internal 
-    # functions to handle comfortably
+    # Convert Pydantic models to dictionaries
     task_dict = data.task.model_dump()
-    volunteers_list = [v.model_dump() for v in data.volunteers]
+    
+    # If no volunteers are provided, use the master list from our service
+    if not data.volunteers:
+        volunteers_list = vol_service.get_all_volunteers()
+    else:
+        volunteers_list = [v.model_dump() for v in data.volunteers]
     
     # Run the intelligence layer logic
     result = process_new_task(task_dict, volunteers_list)
     
     return result
+
+@app.get("/roster")
+def get_roster():
+    """Returns the full volunteer roster with live stats."""
+    return vol_service.get_all_volunteers()
+
+@app.get("/inventory")
+def get_inventory():
+    """Returns the full inventory data."""
+    return inv_service.get_all_items()
+
+@app.get("/inventory/stats")
+def get_inventory_stats():
+    """Returns inventory overview metrics."""
+    return inv_service.get_stats()
+
+@app.post("/recommend-gear")
+def recommend_gear(data: dict):
+    """Infers recommended gear based on mission description."""
+    description = data.get("description", "")
+    return inv_service.infer_recommendations(description)
+
+@app.get("/activities")
+def get_activities():
+    """Returns the list of nearby NGO/community activities."""
+    path = "data/nearby_activities.json"
+    if os.path.exists(path):
+        with open(path, "r") as f:
+            return json.load(f)
+    return []
 
 if __name__ == "__main__":
     print("Starting AI Layer Server on http://127.0.0.1:8000")
