@@ -39,8 +39,12 @@ translator_agent = Agent(
 # -------------------------
 # 2. RUN THE PIPELINE
 # -------------------------
-def process_ngo_report(unstructured_report: str):
-    print("Starting CrewAI Processing Pipeline...")
+def process_ngo_report(unstructured_report: str, temperature=0.1):
+    print(f"Starting CrewAI Processing Pipeline with temp={temperature}...")
+    
+    # Update LLM temperature for this specific run if needed
+    # Note: In a production app, you might want to create a new LLM instance
+    llm.temperature = temperature
     
     extract_task = Task(
         description=f"Read the following chaotic NGO field report and extract 1 clean, actionable 'Task Description' and the 'People Count'.\n\nReport:\n'{unstructured_report}'\n\nReturn ONLY a valid JSON format exact format: {{\"description\": \"...\", \"people_count\": 5}}",
@@ -72,6 +76,7 @@ def process_ngo_report(unstructured_report: str):
     except Exception as e:
         print("Failed to parse crew output:", e)
         return {"description": str(result.raw), "people_count": 1}
+
 
 # -------------------------
 # 3. TEST SCRIPT

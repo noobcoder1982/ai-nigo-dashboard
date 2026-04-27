@@ -3,97 +3,423 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NGO AI Command Center</title>
+    <title>NGO AI | Command Center</title>
+    <!-- Geist Font Family -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/geist@1.3.0/dist/fonts/geist.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/geist@1.3.0/dist/fonts/geist-mono.min.css">
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Mapping and Visualization -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js" charset="utf-8"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.344.0/dist/umd/lucide.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 </head>
 <body>
-    <div class="app-container">
-        <!-- Sidebar -->
-        <aside class="sidebar">
-            <div class="logo">
-                <i class="fa-solid fa-shield-halved"></i>
-                <h2>AI Command</h2>
+    <!-- 1. LANDING VIEW (GALLERY EMPTINESS) -->
+    <div id="landing-view" class="landing-page">
+        <div class="landing-top-actions">
+            <button class="landing-theme-toggle theme-btn" id="landing-theme-btn" onclick="toggleTheme()">
+                <i data-lucide="moon" class="theme-icon"></i>
+            </button>
+        </div>
+        <div class="landing-content">
+            <h1 class="landing-title">Coordination Infrastructure <br>Made Invisible.</h1>
+            <div class="landing-input-container">
+                <div class="landing-input-wrapper">
+                    <textarea id="landing-input" placeholder="Describe the mission or report an incident..." rows="1"></textarea>
+                    <div class="landing-footer">
+                        <div class="model-selector-wrapper">
+                            <div class="model-selector" id="model-toggle">
+                                <i data-lucide="zap"></i>
+                                <span id="current-model">NGO.AI CORE v1</span>
+                                <i data-lucide="chevron-down" id="chevron-icon"></i>
+                            </div>
+                            <div class="model-dropdown hidden" id="model-menu">
+                                <div class="dropdown-item active" data-model="NGO.AI CORE v1">
+                                    <div class="model-icon core"><i data-lucide="zap"></i></div>
+                                    <div class="item-info">
+                                        <div class="item-name">NGO.AI CORE v1</div>
+                                        <div class="item-desc">Optimized for rapid triage & dispatch</div>
+                                    </div>
+                                    <i data-lucide="check" class="check-icon"></i>
+                                </div>
+                                <div class="dropdown-item" data-model="GPT-4o Operational">
+                                    <div class="model-icon gpt"><i data-lucide="cpu"></i></div>
+                                    <div class="item-info">
+                                        <div class="item-name">GPT-4o Operational</div>
+                                        <div class="item-desc">Deep reasoning for complex logistics</div>
+                                    </div>
+                                    <i data-lucide="check" class="check-icon hidden"></i>
+                                </div>
+                                <div class="dropdown-item" data-model="Claude 3.5 Sonnet">
+                                    <div class="model-icon claude"><i data-lucide="bot"></i></div>
+                                    <div class="item-info">
+                                        <div class="item-name">Claude 3.5 Sonnet</div>
+                                        <div class="item-desc">Nuanced natural language processing</div>
+                                    </div>
+                                    <i data-lucide="check" class="check-icon hidden"></i>
+                                </div>
+                                <div class="dropdown-item" data-model="Gemma 3N 4B">
+                                    <div class="model-icon" style="background:#f3f4f6; color:#1a1c23"><i data-lucide="cpu"></i></div>
+                                    <div class="item-info">
+                                        <div class="item-name">Gemma 3N 4B</div>
+                                        <div class="item-desc">Efficient edge-ready intelligence</div>
+                                    </div>
+                                    <i data-lucide="check" class="check-icon hidden"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <button id="landing-send-btn" class="send-circle">
+                            <i data-lucide="arrow-up"></i>
+                        </button>
+                    </div>
+                </div>
             </div>
-            <nav>
-                <a href="#" class="active"><i class="fa-solid fa-satellite-dish"></i> <span>Mission Control</span></a>
-                <a href="#"><i class="fa-solid fa-users"></i> <span>Volunteer Roster</span></a>
-                <a href="#"><i class="fa-solid fa-chart-pie"></i> <span>Analytics</span></a>
-                <a href="#"><i class="fa-solid fa-gear"></i> <span>Settings</span></a>
-            </nav>
-            <div class="system-status">
-                <p>System Status</p>
-                <div class="status-indicator">
-                    <span class="pulse"></span> Online (FastAPI)
+            <div class="landing-suggestions">
+                <button class="suggestion-btn" data-query="Medical emergency in North Delhi">
+                    <i data-lucide="heart-pulse"></i> Medical Emergency
+                </button>
+                <button class="suggestion-btn" data-query="Flooding reported in Mumbai coastal areas">
+                    <i data-lucide="waves"></i> Flood Relief
+                </button>
+                <button class="suggestion-btn" data-query="Wildfire rescue mission in Amazon basin">
+                    <i data-lucide="flame"></i> Fire Rescue
+                </button>
+                <button class="suggestion-btn" data-query="Supply drop for remote mountain village">
+                    <i data-lucide="package"></i> Supply Drop
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. MAIN APP -->
+    <div class="app-container hidden" id="main-app">
+        <div id="code-red-banner" class="code-red-banner hidden">
+            <i data-lucide="alert-triangle"></i>
+            <span>VOLUNTEER CAPACITY CRITICALLY LOW — Immediate recovery required.</span>
+        </div>
+        <!-- CONSOLE SIDEBAR -->
+        <aside class="chat-sidebar">
+            <header class="chat-header">
+                <div class="mono-label" style="color:var(--ds-gray-900); display:flex; align-items:center; gap:8px">
+                    <i data-lucide="command" style="width:14px"></i>
+                    NGO.AI/CORE
+                </div>
+                <div class="header-actions">
+                    <button id="main-theme-btn" class="theme-btn" title="Toggle Theme">
+                        <i data-lucide="moon" class="theme-icon"></i>
+                    </button>
+                    <button id="start-new-chat" title="New Chat"><i data-lucide="plus"></i></button>
+                </div>
+            </header>
+
+            <!-- CHAT HISTORY LIST -->
+            <div class="history-container">
+                <div class="mono-label" style="padding: 12px 24px 8px; font-size: 10px">Recent Operations</div>
+                <div id="chat-history-list" class="history-list">
+                    <!-- Injected by JS -->
+                </div>
+            </div>
+
+            <div id="chat-messages" class="chat-messages">
+                <!-- Messages injected by JS -->
+            </div>
+
+            <footer class="chat-input-area">
+                <div class="input-controls">
+                    <div class="temp-control">
+                        <span class="mono-label" style="font-size:10px">Creativity</span>
+                        <input type="range" id="creativity-slider" min="0" max="1" step="0.1" value="0.7">
+                        <span id="temp-val" class="mono-label" style="color:var(--ds-gray-900); min-width:20px">0.7</span>
+                    </div>
+                </div>
+                <div class="input-wrapper">
+                    <textarea id="user-input" placeholder="Type a field report..." rows="1"></textarea>
+                    <button id="send-btn">
+                        <i data-lucide="arrow-up"></i>
+                    </button>
+                </div>
+            </footer>
+
+            <!-- HEALTH PANEL -->
+            <div class="health-panel">
+                <div class="mono-label" style="margin-bottom: 12px; font-size: 10px">System Health</div>
+                <div class="health-stat">
+                    <span>AI Mode</span>
+                    <span id="health-ai-mode"><span class="health-status-dot online"></span> ONLINE</span>
+                </div>
+                <div class="health-stat">
+                    <span>Uptime</span>
+                    <span id="health-uptime">00:00:00</span>
+                </div>
+                <div class="health-stat">
+                    <span>Sync</span>
+                    <span id="health-last-sync">Just now</span>
                 </div>
             </div>
         </aside>
 
-        <!-- Main Content -->
-        <main class="main-content">
-            <header>
-                <div class="header-titles">
-                    <h1>Command Center</h1>
-                    <p>Extract, triage, and deploy "Mega-Squads" using CrewAI & ChromaDB.</p>
+        <!-- COMMAND CENTER PREVIEW -->
+        <main class="preview-area">
+            <nav class="preview-nav">
+                <div class="tabs">
+                    <button class="tab active" data-tab="mission">Mission Control</button>
+                    <button class="tab" data-tab="analytics">Operations Hub</button>
+                    <button class="tab" data-tab="roster">Personnel Database</button>
+                    <button class="tab" data-tab="inventory">Inventory & Logistics</button>
+                    <button class="tab" data-tab="activities">Nearby Activities</button>
                 </div>
-                <div class="user-profile">
-                    <div class="avatar">Commander</div>
+                <div class="mono-label" style="display:flex; align-items:center; gap:8px; font-size:10px">
+                    <span class="status-dot green pulse"></span>
+                    SYSTEM_READY
                 </div>
-            </header>
+            </nav>
 
-            <section class="dashboard-grid">
-                <!-- Input Panel -->
-                <div class="glass-card input-panel">
-                    <h3><i class="fa-solid fa-pen-nib"></i> Field Report Input</h3>
-                    <textarea id="reportInput" placeholder="Paste chaotic field report here... e.g. 'Massive flooding in sector 4, we need 5 medics...'"></textarea>
-                    <button id="analyzeBtn" class="btn-primary">
-                        <span>Analyze & Deploy</span>
-                        <i class="fa-solid fa-rocket"></i>
-                    </button>
-                    <div id="loader" class="loader hidden">
-                        <div class="spinner"></div>
-                        <p>CrewAI Agents Extracting...</p>
+            <section id="preview-content" class="preview-content">
+                <!-- WELCOME / LOADING -->
+                <div id="welcome-view" class="view welcome-view">
+                    <div class="welcome-container">
+                        <h2 style="margin-bottom:12px">Awaiting Intelligence.</h2>
+                        <p class="body-small">The autonomous triage pipeline is standing by for tactical coordinates.</p>
+                        
+                        <div class="system-loader">
+                            <div class="loader-track">
+                                <div id="loader-progress" class="loader-fill"></div>
+                            </div>
+                            <div class="loader-status">
+                                <span id="loader-text">Neural uplink idle</span>
+                                <span id="loader-percent">0%</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Results Panel -->
-                <div class="glass-card results-panel">
-                    <h3><i class="fa-solid fa-microchip"></i> AI Intelligence Output</h3>
+                <!-- MISSION OUTPUT -->
+                <div id="mission-view" class="view mission-view hidden">
+                    <div class="mission-header">
+                        <div>
+                            <div class="mono-label" style="margin-bottom:4px">Incident Category</div>
+                            <h2 id="task-category">Unclassified</h2>
+                        </div>
+                        <div style="text-align:right">
+                            <span id="urgency-tag" class="status-pill fatigued">Critical</span>
+                        </div>
+                    </div>
+
+                    <div class="bento-grid">
+                        <div class="bento-card span-2">
+                            <div class="mono-label">AI Strategic Briefing</div>
+                            <p id="ai-briefing" class="body-small" style="color:var(--ds-gray-900); margin:8px 0">Processing...</p>
+                            <div style="margin-top:auto; display:flex; gap:12px">
+                                <button id="deploy-btn" class="suggestion-btn" style="background:var(--ds-gray-900); color:white; border:none; padding:12px 24px; border-radius:6px">CONFIRM DISPATCH</button>
+                                <button id="show-thinking-btn" class="suggestion-btn">View Log Trace</button>
+                            </div>
+                        </div>
+
+                        <div class="bento-card">
+                            <div class="mono-label">Priority Index</div>
+                            <div class="metric-value" id="priority-score">00</div>
+                            <div class="mono-label" style="margin-top:auto">Potential Reward: <span id="reward-points" style="color:var(--preview-pink)">+0 XP</span></div>
+                        </div>
+
+                        <div class="bento-card span-2">
+                            <div class="mono-label">Unit Allocation</div>
+                            <div id="squad-list" class="unit-list">
+                                <!-- Squad cards injected -->
+                            </div>
+                        </div>
+
+                        <div class="bento-card span-3">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px">
+                                <div class="mono-label">Recommended Squad Loadout (AI Inferred)</div>
+                                <div class="score-pill ready" style="font-size:10px">Inventory Sync: Active</div>
+                            </div>
+                            <div id="loadout-list" style="display:flex; flex-wrap:wrap; gap:12px">
+                                <!-- Loadout items injected -->
+                                <p class="body-small">Analyzing equipment requirements...</p>
+                            </div>
+                        </div>
+
+                        <div class="bento-card">
+                            <div class="mono-label">Reserve Pool</div>
+                            <div id="reserve-list" class="unit-list">
+                                <!-- Reserves injected -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ANALYTICS HUB -->
+                <div id="analytics-view" class="view analytics-view hidden">
+                    <h2 style="margin-bottom:32px">Operations Hub</h2>
+                    <div class="bento-grid">
+                        <div class="bento-card">
+                            <div class="mono-label">Avg Readiness</div>
+                            <div class="metric-value" id="avg-energy">0%</div>
+                        </div>
+                        <div class="bento-card">
+                            <div class="mono-label">Active Units</div>
+                            <div class="metric-value" id="active-units-count">0</div>
+                        </div>
+                        <div class="bento-card">
+                            <div class="mono-label">Completed</div>
+                            <div class="metric-value" id="total-missions">0</div>
+                        </div>
+                        <div class="bento-card span-2">
+                            <div class="mono-label">Total NGO Readiness</div>
+                            <div id="readiness-gauge"></div>
+                            <p class="body-small">Real-time aggregate energy across all active personnel.</p>
+                        </div>
+                        <div class="bento-card span-3">
+                            <div class="mono-label">Tactical Deployment Intelligence</div>
+                            <div id="map-container"></div>
+                            <p class="body-small" style="margin-top:8px">Visual coordinates of ongoing missions and personnel distribution.</p>
+                        </div>
+                        <div class="bento-card span-2">
+                            <div class="mono-label">Simulation Controls</div>
+                            <div style="display:flex; gap:12px; margin-top:12px; flex-wrap:wrap">
+                                <button class="suggestion-btn" onclick="simulateMission('easy')">Complete Easy (-8%)</button>
+                                <button class="suggestion-btn" onclick="simulateMission('medium')">Complete Medium (-15%)</button>
+                                <button class="suggestion-btn" onclick="simulateMission('hard')">Complete Hard (-28%)</button>
+                                <button class="suggestion-btn" style="border-color:var(--energy-100); color:var(--energy-100)" onclick="recoverEnergy()">Recover Energy (+15%)</button>
+                                <button class="suggestion-btn" style="border-color:var(--energy-100); background:var(--energy-100); color:white" onclick="resetEnergy()">Full Reset</button>
+                            </div>
+                        </div>
+
+                        <div class="bento-card">
+                            <div class="mono-label">Top Units</div>
+                            <div id="top-performers-list" class="unit-list"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- INVENTORY VIEW -->
+                <div id="inventory-view" class="view inventory-view hidden">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:32px">
+                        <h2>Logistics Command</h2>
+                        <button id="add-asset-btn" class="suggestion-btn" style="background:var(--ds-gray-900); color:white">Add Asset +</button>
+                    </div>
                     
-                    <div id="emptyState" class="empty-state">
-                        <i class="fa-solid fa-radar"></i>
-                        <p>Awaiting incoming transmission...</p>
+                    <div class="bento-grid" style="margin-bottom:32px">
+                        <div class="bento-card">
+                            <div class="mono-label">Total Assets</div>
+                            <div class="metric-value" id="inv-total">0</div>
+                        </div>
+                        <div class="bento-card">
+                            <div class="mono-label">Low Stock</div>
+                            <div class="metric-value" style="color:var(--energy-40)" id="inv-low">0</div>
+                        </div>
+                        <div class="bento-card">
+                            <div class="mono-label">Active Deployments</div>
+                            <div class="metric-value" id="inv-active">14</div>
+                        </div>
                     </div>
 
-                    <div id="resultsData" class="results-data hidden">
-                        <div class="metrics-row">
-                            <div class="metric-box">
-                                <span class="label">Priority Score</span>
-                                <strong id="priorityScore" class="value text-gold">0</strong>
+                    <div class="bento-card" style="padding:0">
+                        <div style="padding:24px; border-bottom:1px solid var(--ds-gray-100)">
+                            <div class="mono-label">Global Stock Ledger</div>
+                        </div>
+                        <div class="table-container">
+                            <table class="roster-table">
+                                <thead>
+                                    <tr>
+                                        <th>Asset Name</th>
+                                        <th>Category</th>
+                                        <th>Stock</th>
+                                        <th>Condition</th>
+                                        <th>Location</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="inventory-tbody">
+                                    <!-- Injected -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- NEARBY ACTIVITIES VIEW -->
+                <div id="activities-view" class="view activities-view hidden">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:32px">
+                        <div>
+                            <h2 style="margin-bottom:4px">Bhubaneswar Impact Radar</h2>
+                            <p class="body-small" style="color:var(--ds-gray-500)">Real-time discovery of NGO and community actions</p>
+                        </div>
+                        <div style="display:flex; gap:12px">
+                            <select id="activity-radius" class="suggestion-btn" style="background:var(--ds-background-200); border:1px solid var(--ds-gray-100)">
+                                <option value="2">2 km radius</option>
+                                <option value="5" selected>5 km radius</option>
+                                <option value="10">10 km radius</option>
+                                <option value="20">20 km radius</option>
+                            </select>
+                            <button class="suggestion-btn" style="background:var(--ds-gray-900); color:white">Report Activity +</button>
+                        </div>
+                    </div>
+
+                    <div class="bento-grid" style="grid-template-columns: 1.5fr 1fr; gap:24px; align-items: start;">
+                        <!-- MAP AREA -->
+                        <div class="bento-card" style="padding:0; overflow:hidden; min-height:600px; display:flex; flex-direction:column">
+                            <div style="padding:16px; border-bottom:1px solid var(--ds-gray-100); display:flex; justify-content:space-between; align-items:center">
+                                <div class="mono-label">Live Activity Map</div>
+                                <div class="score-pill ready" style="font-size:10px">Monitoring 12 Sources</div>
                             </div>
-                            <div class="metric-box">
-                                <span class="label">Task Category</span>
-                                <strong id="taskCategory" class="value">N/A</strong>
-                            </div>
+                            <div id="activity-map" style="flex:1; background:var(--ds-background-200)"></div>
                         </div>
 
-                        <div class="translation-box">
-                            <h4><i class="fa-solid fa-language"></i> French Translation</h4>
-                            <p id="frTranslation">...</p>
+                        <!-- LIST AREA -->
+                        <div style="display:flex; flex-direction:column; gap:16px">
+                            <div class="mono-label" style="margin-bottom:8px">Ongoing & Upcoming (Bhubaneswar)</div>
+                            <div id="activity-list" style="display:flex; flex-direction:column; gap:16px; max-height:800px; overflow-y:auto; padding-right:8px">
+                                <!-- Activity cards injected -->
+                            </div>
                         </div>
+                    </div>
+                </div>
 
-                        <div class="squad-box">
-                            <h4><i class="fa-solid fa-helicopter"></i> Assembled Squad</h4>
-                            <ul id="squadList" class="squad-list">
-                                <!-- Populated via JS -->
-                            </ul>
+                <!-- PERSONNEL DATABASE -->
+                <div id="roster-view" class="view roster-view hidden">
+                    <div class="roster-header">
+                        <div>
+                            <h2>Personnel</h2>
+                            <p class="body-small">Operational status & hierarchy</p>
                         </div>
+                        <div class="search-box">
+                            <i data-lucide="search"></i>
+                            <input type="text" id="roster-search" placeholder="Search infrastructure...">
+                        </div>
+                    </div>
+                    
+                    <div class="bento-card" style="padding:0; overflow:hidden">
+                        <table class="roster-table">
+                            <thead>
+                                <tr>
+                                    <th>Unit</th>
+                                    <th>Rank</th>
+                                    <th>Status</th>
+                                    <th>Readiness</th>
+                                    <th>Performance</th>
+                                </tr>
+                            </thead>
+                            <tbody id="roster-tbody"></tbody>
+                        </table>
                     </div>
                 </div>
             </section>
         </main>
     </div>
+
+    <!-- PROFILE MODAL -->
+    <div id="profile-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <button class="modal-close" id="close-modal"><i data-lucide="x"></i></button>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
     <script src="app.js"></script>
+    <script>lucide.createIcons();</script>
 </body>
 </html>

@@ -60,14 +60,13 @@ Together, these systems form a unified, enterprise-grade response platform capab
 │  ┌──────────────────────────┐    ┌──────────────────────────────┐   │
 │  │    Streamlit Dashboard   │    │     AI Intelligence Engine   │   │
 │  │     (Python + Plotly)    │    │ (FastAPI + CrewAI + ChromaDB)│   │
-│  │                          │    │                              │   │
-│  │  • Report Upload UI      │    │  • Multi-Agent Extraction    │   │
+│  • Report Upload UI      │    │  • Multi-Agent Extraction    │   │
 │  │  • Volunteer Roster      │    │  • Semantic Vector Search    │   │
 │  │  • Squad Deployment      │◄───┤  • Proximity Scoring         │   │
 │  │  • Real-time Analytics   │    │  • Mega-Squad Assembly       │   │
 │  │  • System Strain Gauge   │    │  • Energy/Fatigue Tracking   │   │
 │  │                          │    │                              │   │
-│  └─────────────┬────────────┘    └──────────────┬───────────────┘   │
+│  └──────────────────────────┘    └──────────────────────────────┘   │
 │                │                                │                   │
 │                ▼                                ▼                   │
 │         Plotly Analytics              NVIDIA NIM API (Llama 3.1)    │
@@ -245,9 +244,25 @@ mkdir src\data
 ```
 
 ### Launch the Platform
+
+#### 🚀 Premium Developer Launcher (Recommended)
+We've built a high-end, NeoFetch-inspired CLI launcher that manages both servers, handles port conflicts, and monitors system health.
+
+```powershell
+# 1. Install CLI dependencies (first time only)
+npm run install:deps
+
+# 2. Launch the entire system
+npm run launch
+```
+*Controls: Press **R** to restart all services, **Q** to quit.*
+
+#### 🛠️ Manual Launch (Legacy)
+If you prefer standard logs, use two separate terminals:
+
 ```powershell
 # Terminal 1: Start the Dashboard
-streamlit run src/api/dashboard.py
+python -m http.server 3000 -d frontend
 
 # Terminal 2: Start the REST API
 uvicorn src.api.server:app --reload --port 8000

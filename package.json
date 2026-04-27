@@ -1,0 +1,17 @@
+{
+  "name": "ai-ngo-dashboard-launcher",
+  "version": "1.0.0",
+  "description": "Premium developer launcher for the NGO AI Dashboard",
+  "main": "launch.js",
+  "scripts": {
+    "launch": "node launch.js",
+    "install:deps": "npm install chalk@4.1.2 ora@5.4.1 boxen@5.1.2 cli-table3@0.6.0 open@8.4.2"
+  },
+  "dependencies": {
+    "boxen": "^5.1.2",
+    "chalk": "^4.1.2",
+    "cli-table3": "^0.6.0",
+    "open": "^8.4.2",
+    "ora": "^5.4.1"
+  }
+}

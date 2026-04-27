@@ -2,6 +2,20 @@ import json
 import requests
 import re
 from config.settings import settings
+from src.core.offline_engine import offline_intelligence_mode
+import logging
+import os
+
+# Setup logging
+if not os.path.exists('logs'):
+    os.makedirs('logs')
+
+logging.basicConfig(
+    filename='logs/system.log',
+    level=logging.INFO,
+    format='[%(asctime)s] %(message)s',
+    datefmt='%H:%M:%S'
+)
 
 NVIDIA_API_KEY = settings.NVIDIA_API_KEY
 NVIDIA_API_URL = settings.NVIDIA_API_URL
@@ -9,59 +23,82 @@ NVIDIA_API_URL = settings.NVIDIA_API_URL
 # Global cache for the current session to prevent double API calls by Streamlit
 _llm_cache = {}
 
-def call_llm(description):
+def call_llm(description, temperature=0.1, tone="Professional"):
     headers = {
         "Authorization": f"Bearer {NVIDIA_API_KEY}",
         "Content-Type": "application/json"
     }
     
     prompt = f"""
-    Analyze the following disaster response help request (which might come from a group chat or direct input).
-    Extract the following information and output ONLY a valid JSON object. No markdown, no other text.
-
-    1. "thought_process": A chain-of-thought string where you silently think step-by-step about what the user is asking, identifying numbers, detecting skills required, and determining the classification.
-    2. "category": The best fitting category from: ["Health", "Relief", "Logistics", "Safety", "Mental Health", "Environment", "Admin", "Education", "General"].
-    3. "urgency": Priority level from: ["Critical", "High", "Medium", "Low"].
-    4. "people_count": Integer representing the number of people affected. Look closely for numbers like '23 people', 'a dozen', 'five families'. If not specified or vague, return null.
-    5. "understood_reasoning": A detailed explanation (1-2 sentences) of what you understood from the request, explicitly mentioning the keywords or context used to determine the category, urgency, and scale. Act as the AI coordinator.
-
-    Help Request:
-    "{description}"
-
-    JSON:
+    Analyze this disaster response report: "{description}"
+    
+    Extract:
+    1. "intent": ["REPORT", "QUESTION"] - Is this a disaster report/incident or just a general question?
+    2. "conversational_response": If intent is QUESTION, provide a helpful answer. If REPORT, keep it short like "Acknowledged."
+    3. "thought_process": Your internal reasoning.
+    4. "category": ["Health", "Relief", "Logistics", "Safety", "Mental Health", "Environment", "Admin", "Education", "General"]
+    5. "urgency": ["Critical", "High", "Medium", "Low"]
+    6. "people_count": Integer.
+    7. "understood_reasoning": A 2-3 sentence explanation as the AI Coordinator.
+    
+    TONE REQUIREMENT: Use a {tone} tone in the 'understood_reasoning' and 'thought_process'.
+    
+    Return ONLY a valid JSON object.
     """
     
     payload = {
-        "model": "meta/llama-3.1-8b-instruct",
+        "model": "google/gemma-3n-e4b-it",
         "messages": [{"role": "user", "content": prompt}],
-        "temperature": 0.1,
-        "max_tokens": 512
+        "temperature": temperature,
+        "max_tokens": 1024
     }
     
     try:
-        response = requests.post(NVIDIA_API_URL, headers=headers, json=payload, timeout=12)
+        response = requests.post(NVIDIA_API_URL, headers=headers, json=payload, timeout=30)
+        response.raise_for_status()
         content = response.json()['choices'][0]['message']['content']
-        # Clean potential markdown wrapping
-        content = content.replace("```json", "").replace("```", "").strip()
+        
+        # Robust JSON extraction
+        json_match = re.search(r'\{.*\}', content, re.DOTALL)
+        if json_match:
+            content = json_match.group(0)
+            
         return json.loads(content)
     except Exception as e:
+        # Log error to file
+        logging.error(f"API failure. Switched to offline mode. Error: {str(e)}")
+        
+        with open("llm_error.log", "a") as f:
+            f.write(f"Error: {str(e)}\nResponse: {getattr(response, 'text', 'N/A')}\n\n")
+        
         print("LLM Error:", e)
-        return None
+        # Use Offline Fallback Engine
+        return offline_intelligence_mode(description)
 
-def get_cached_llm(description):
+def get_cached_llm(description, temperature=0.1, tone="Professional"):
     if not description or len(description.strip()) < 3:
         return None
-        
-    if description not in _llm_cache:
-        _llm_cache[description] = call_llm(description)
-    return _llm_cache[description]
+    
+    # Cache key includes temperature and tone to ensure different results are cached
+    cache_key = f"{description}_{temperature}_{tone}"
+    if cache_key not in _llm_cache:
+        _llm_cache[cache_key] = call_llm(description, temperature, tone)
+    return _llm_cache[cache_key]
 
-def classify_task(description):
+def get_intent(description, temperature=0.1, tone="Professional"):
+    res = get_cached_llm(description, temperature, tone)
+    return res.get("intent", "REPORT") if res else "REPORT"
+
+def get_conversational_response(description, temperature=0.1, tone="Professional"):
+    res = get_cached_llm(description, temperature, tone)
+    return res.get("conversational_response", "I understand.") if res else "I'm processing that."
+
+def classify_task(description, temperature=0.1, tone="Professional"):
     """
     Categorizes the task using NVIDIA NIM LLM.
     Returns: (category, initial_urgency)
     """
-    res = get_cached_llm(description)
+    res = get_cached_llm(description, temperature, tone)
     if res:
         cat = res.get("category", "General")
         if isinstance(cat, list) and len(cat) > 0:
@@ -72,11 +109,11 @@ def classify_task(description):
         return cat, res.get("urgency", "Low")
     return "General", "Low"
 
-def extract_impact_count(description):
+def extract_impact_count(description, temperature=0.1, tone="Professional"):
     """
     Extracts people count using NVIDIA NIM LLM.
     """
-    res = get_cached_llm(description)
+    res = get_cached_llm(description, temperature, tone)
     if res and res.get("people_count") is not None:
         try:
             return int(res["people_count"])
@@ -84,11 +121,11 @@ def extract_impact_count(description):
             pass
     return None
 
-def get_llm_reasoning(description):
+def get_llm_reasoning(description, temperature=0.1, tone="Professional"):
     """
     Returns the reasoning string and internal thought process generated by the LLM.
     """
-    res = get_cached_llm(description)
+    res = get_cached_llm(description, temperature, tone)
     if res:
         summary = res.get("understood_reasoning", "I processed the request with standard AI algorithms.")
         thoughts = res.get("thought_process", "Thinking trace unavailable.")
